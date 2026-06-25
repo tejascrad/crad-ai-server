@@ -16,9 +16,9 @@ class ROIMotionDetector:
 
     def _person_inside_roi(self, frame, roi_points):
         h, w = frame.shape[:2]
-        scale = 2.0 if max(h, w) < 1920 else 1.5
-        upscaled = cv2.resize(frame, (int(w*scale), int(h*scale)))
-        results = self.model(upscaled, verbose=False, imgsz=1280)[0]
+	scale = 1.0
+	upscaled = frame
+        results = self.model(upscaled, verbose=False, imgsz=640)[0]
         roi_poly = np.array(roi_points, np.int32)
         confirmed = []
         for box in results.boxes:
