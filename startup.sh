@@ -5,4 +5,4 @@ if [ ! -f models/yolov8n.pt ]; then
     curl -L -o models/yolov8n.pt https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
     echo "Model downloaded."
 fi
-uvicorn main:app --host 0.0.0.0 --port $PORT
+exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8765}
