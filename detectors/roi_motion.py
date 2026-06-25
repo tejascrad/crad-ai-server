@@ -3,9 +3,9 @@ import numpy as np
 import base64
 from ultralytics import YOLO
 
-MOTION_THRESHOLD = 500
 YOLO_CONFIDENCE = 0.35
 COLORS = [(0,0,255),(0,255,0),(255,0,0),(0,255,255),(255,0,255),(255,255,0)]
+
 
 class ROIMotionDetector:
 
@@ -41,26 +41,17 @@ class ROIMotionDetector:
         if prev_gray is None:
             return {"status":"success","motion_detected":False,
                     "human_detected":False,"details":"","annotated_image":""}
-        diff = cv2.absdiff(prev_gray, gray)
-        blur = cv2.GaussianBlur(diff,(5,5),0)
-        _,thresh = cv2.threshold(blur,25,255,cv2.THRESH_BINARY)
         display = frame.copy()
         human_detected = False
         details_parts = []
         alert_count = 0
         for roi_idx, roi_points in enumerate(all_rois):
             color = COLORS[roi_idx % len(COLORS)]
-            mask = np.zeros(gray.shape[:2], dtype=np.uint8)
-            cv2.fillPoly(mask,[np.array(roi_points,np.int32)],255)
-            motion_roi = cv2.bitwise_and(thresh, mask)
-            motion_pixels = cv2.countNonZero(motion_roi)
-	    human_found, person_boxes = False, []
-	    # Run YOLO on every frame — no motion gate
             human_found, person_boxes = self._person_inside_roi(frame, roi_points)
             if human_found:
-            	human_detected = True
-            	alert_count += 1
-            	details_parts.append(f"Human detected in ROI {roi_idx+1}")
+                human_detected = True
+                alert_count += 1
+                details_parts.append(f"Human detected in ROI {roi_idx+1}")
             pts_arr = np.array(roi_points, np.int32)
             if human_found:
                 overlay = display.copy()
