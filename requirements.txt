@@ -6,3 +6,4 @@ numpy==1.26.4
 python-multipart==0.0.9
 torch==2.6.0
 torchvision==0.21.0
+dill
