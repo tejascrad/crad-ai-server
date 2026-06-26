@@ -34,12 +34,26 @@ def health():
     }
 
 @app.post("/init")
-async def init(session_id: str = Form(...), rois_json: str = Form(...)):
+async def init(
+    session_id: str = Form(...),
+    rois_json: str = Form(...),
+    detection_types: str = Form("human")
+):
     if not model_ready:
         raise HTTPException(status_code=503, detail="Models still loading.")
     rois = [[(int(p[0]),int(p[1])) for p in roi] for roi in json.loads(rois_json)]
-    sessions[session_id] = {"rois": rois, "prev_gray": None}
-    return {"status":"ready","session_id":session_id,"roi_count":len(rois)}
+    types = [t.strip() for t in detection_types.split(",") if t.strip()]
+    sessions[session_id] = {
+        "rois": rois,
+        "prev_gray": None,
+        "detection_types": types
+    }
+    return {
+        "status": "ready",
+        "session_id": session_id,
+        "roi_count": len(rois),
+        "detection_types": types
+    }
 
 @app.post("/detect")
 async def detect(
@@ -61,34 +75,40 @@ async def detect(
         raise HTTPException(status_code=400, detail="Cannot read image")
 
     state = sessions[session_id]
+    types = state.get("detection_types", ["human"])
 
-    # ROI Motion (Human) Detection
-    roi_result = roi_detector.run(frame, state["rois"], state["prev_gray"])
+    human_detected = False
+    fire_detected = False
+    details = ""
+    annotated_image = ""
+
+    # ROI Human Detection
+    if "human" in types:
+        roi_result = roi_detector.run(frame, state["rois"], state["prev_gray"])
+        human_detected = roi_result.get("human_detected", False)
+        if human_detected:
+            details = roi_result.get("details", "")
+            annotated_image = roi_result.get("annotated_image", "")
 
     # Fire Detection
-    fire_result = fire_detector.run(frame.copy())
+    if "fire" in types:
+        fire_result = fire_detector.run(frame.copy())
+        fire_detected = fire_result.get("fire_detected", False)
+        if fire_detected:
+            details = fire_result.get("details", "")
+            annotated_image = fire_result.get("annotated_image", "")
 
-    # Update prev_gray for motion gate
+    # Update prev_gray
     sessions[session_id]["prev_gray"] = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
     del frame, contents
-
-    # Combine results — human takes priority for annotated image
-    human_detected = roi_result.get("human_detected", False)
-    fire_detected = fire_result.get("fire_detected", False)
-
-    # Use fire annotated image if fire detected, else human
-    if fire_detected:
-        annotated_image = fire_result.get("annotated_image", "")
-        details = fire_result.get("details", "")
-    else:
-        annotated_image = roi_result.get("annotated_image", "")
-        details = roi_result.get("details", "")
 
     return {
         "status": "success",
         "human_detected": human_detected,
         "fire_detected": fire_detected,
+        "crowd_detected": False,
+        "loitering_detected": False,
+        "violation_detected": False,
         "motion_detected": False,
         "details": details,
         "annotated_image": annotated_image
