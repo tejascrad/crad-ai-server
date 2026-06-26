@@ -14,10 +14,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN mkdir -p models && \
-    curl -L -o models/yolov8n.pt \
+    curl -L --fail -o models/yolov8n.pt \
     https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt && \
-    curl -L -o models/fire_best.pt \
-    https://github.com/tejascrad/crad-ai-server/releases/download/v1.0/fire_best.pt
+    echo "yolov8n.pt size: $(wc -c < models/yolov8n.pt) bytes" && \
+    curl -L --fail -o models/fire_best.pt \
+    https://github.com/tejascrad/crad-ai-server/releases/download/v1.0/fire_best.pt && \
+    echo "fire_best.pt size: $(wc -c < models/fire_best.pt) bytes"
 
 EXPOSE 8765
 
