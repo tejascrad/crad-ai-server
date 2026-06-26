@@ -14,7 +14,6 @@ class FireDetector:
         print("Fire model loaded.")
 
     def run(self, frame, all_rois=None, prev_gray=None):
-        frame = cv2.resize(frame, (1280, 720))
         fire_results = self.model(frame, verbose=False)
         fire_found = False
         details_parts = []
