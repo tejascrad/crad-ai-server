@@ -41,7 +41,8 @@ def health():
     return {
         "status": "ok" if model_ready else "loading",
         "model_ready": model_ready,
-        "active_sessions": len(sessions)
+        "active_sessions": len(sessions),
+        "session_ids": list(sessions.keys())
     }
 
 @app.post("/init")
